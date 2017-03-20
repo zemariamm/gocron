@@ -24,6 +24,9 @@ import (
 	"runtime"
 	"sort"
 	"time"
+	log "github.com/Sirupsen/logrus"
+//	"fmt"
+//	"strings"
 )
 
 // Time location, default set by the time.Local (*time.Location)
@@ -96,9 +99,12 @@ func (j *Job) run() (result []reflect.Value, err error) {
 	for k, param := range params {
 		in[k] = reflect.ValueOf(param)
 	}
-	result = f.Call(in)
+	
 	j.lastRun = time.Now()
 	j.scheduleNextRun()
+
+	result = f.Call(in)
+
 	return
 }
 
@@ -168,11 +174,12 @@ func (j *Job) scheduleNextRun() {
 			j.lastRun = time.Now()
 		}
 	}
-
+	//var period time.Duration 
 	if j.period != 0 {
 		// translate all the units to the Seconds
 		j.nextRun = j.lastRun.Add(j.period * time.Second)
 	} else {
+
 		switch j.unit {
 		case "minutes":
 			j.period = time.Duration(j.interval * 60)
@@ -191,6 +198,10 @@ func (j *Job) scheduleNextRun() {
 		}
 		j.nextRun = j.lastRun.Add(j.period * time.Second)
 	}
+	log.WithFields(log.Fields{
+		"nextRun" : j.nextRun.Format("2006-01-02 15:04:05"),
+		"name" : j.jobFunc,
+	}).Info("Installing cron job")
 }
 
 // the follow functions set the job's unit with seconds,minutes,hours...
